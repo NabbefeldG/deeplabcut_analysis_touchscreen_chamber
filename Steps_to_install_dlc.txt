@@ -1,0 +1,33 @@
+I had issues again installing dlc and especially the GPU support once again.
+The steps I took to make it work as a Note for what I have to do the next time around.
+
+1. Install CUDA (I used 11.8 this time around)
+This created: "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
+This had the required dll:
+"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\cudart64_110.dll"
+
+2. also download the CUDNN (2.8.0)
+This I donwloaded as a zip-file and placed the content here:
+"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDNN\v8.6.0"
+
+2.1. I also had to manually add 
+"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDNN\v8.6.0\bin"
+(with the cudnn64_8.dll in it)
+
+3. I also required "zlibwapi.dll"
+I placed this in the following folder:
+"C:\Program Files\zlib_for_cudnn\"
+
+3.1. I then needed to add the dll to path:
+(I added: "C:\Program Files\zlib_for_cudnn\dll_x64")
+this points to this dll:
+"C:\Program Files\zlib_for_cudnn\dll_x64\zlibwapi.dll"
+
+At this point the prep is finally done!!!
+4. Now create a conda environment. IMPORTANT: This ran fine through Anaconda, just using pip caused conflicts...
+I downloaded the deeplabcut.yaml and imported the environment. 
+
+4.1. Once this was done I also had to install "pytables" in addition.
+Note: It ran without, but once I was done Labeling I realized it cant save the data without pytables, so a lot of time wasted!!! -_-
+
+Ont sure at this point anymore, either it worked just fine at this point or I also had to install "pytorch" in addition. I did this in previour atempts, but I'm not sure this was required in the end. 
