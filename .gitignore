@@ -1,0 +1,14 @@
+# ignore the entire folder
+deeplabcut_analysis_touchscreen_chamber\.idea\
+
+# Not working above so I do it like this instead:
+*.xml
+*.iml
+
+# also ignore the .png, .svg, .fig, .asv, .mat, .csv
+*.png
+*.svg
+*.fig
+*.asv
+*.mat
+*.csv
