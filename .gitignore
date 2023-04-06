@@ -1,14 +1,14 @@
-# ignore the entire folder
-deeplabcut_analysis_touchscreen_chamber\.idea\
-
-# Not working above so I do it like this instead:
-*.xml
-*.iml
-
-# also ignore the .png, .svg, .fig, .asv, .mat, .csv
+# ignore these file types:
 *.png
 *.svg
+*.csv
 *.fig
 *.asv
 *.mat
-*.csv
+*.xml
+*.pyc
+
+# also ignore this PyCharm folder
+*\.idea
+*\.vs
+*\__pycache__
