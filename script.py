@@ -61,6 +61,14 @@ if __name__ == "__main__":
     file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000.csv"
     df = load_dlc_csv_results(path.join(folder, file))
 
+
+    """
+    This is something I saw and we need to be aware of when interpreting the data!!!
+    Some sessions are recorded at 15Hz and Some at 30Hz !
+    I dont know if that's just the difference between the two setups or not
+    But this is crucial when interpreting the speed of mice!    
+    """
+
     print(df)
 
     fig, ax = plt.subplots(2, 2)
