@@ -25,6 +25,43 @@ def load_dlc_csv_results(fPath):
 #
 
 
+def _align_xy(data_x, data_y, offset, R, s):
+    data_x -= offset[0]
+    data_y -= offset[1]
+
+    data = np.dot(R, np.array([data_x, data_y])) / s
+    # data = np.dot(np.array([data_x, data_y]).T, R.T).T
+
+    return data
+#
+
+
+def align_touchscreen_df(data):
+    temp_ul = [np.nanmedian(data.box_ul_x), np.nanmedian(data.box_ul_y)]
+    temp_ur = [np.nanmedian(data.box_ur_x), np.nanmedian(data.box_ur_y)]
+
+    dx = (temp_ur[0] - temp_ul[0])
+    dy = (temp_ur[1] - temp_ul[1])
+
+    s = np.sqrt(np.power(dx, 2) + np.power(dy, 2))
+
+    alpha = np.arctan(dy / dx)
+    R = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]]).T
+
+    data_keys = np.array(data.keys())
+    data_keys = [t.replace("_x", "") for t in data_keys]
+    data_keys = [t.replace("_y", "") for t in data_keys]
+    data_keys = np.unique(data_keys)
+    for key in data_keys:
+        temp = _align_xy(data[key+"_x"], data[key+"_y"], temp_ul, R, s)
+        data[key + "_x"] = temp[0, :]
+        data[key + "_y"] = temp[1, :]
+    #
+
+    return data
+#
+
+
 # cmaps = {}
 #
 # gradient = np.linspace(0, 1, 256)
@@ -58,8 +95,11 @@ if __name__ == "__main__":
     # file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000_filtered.csv"
     # file = r"373_WIN_20220524_093853DLC_resnet50_testOct30shuffle1_10000_filtered.csv"
     # file = r"373_WIN_20220524_093853DLC_resnet50_testOct30shuffle1_10000.csv"
-    file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000.csv"
+    # file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000.csv"
+    file = r"278_WIN_20220525_085119DLC_resnet50_2023-08-14_TCPhase2Aug14shuffle1_500000_filtered.csv"
     df = load_dlc_csv_results(path.join(folder, file))
+
+    df = align_touchscreen_df(df)
 
 
     """
@@ -87,17 +127,26 @@ if __name__ == "__main__":
     mouse_center = np.array([(df.left_ear_x + df.right_ear_x + df.tail_x) / 3,
                              (df.left_ear_y + df.right_ear_y + df.tail_y) / 3])
 
+    mouse_center[mouse_center < 0] = 0
+    mouse_center[mouse_center > 1] = 1
+
     ax[1, 1].plot(mouse_center[0, :], mouse_center[1, :])
     ax[1, 1].invert_yaxis()
     ax[1, 1].title.set_text('mouse_center')
 
-    bin_f = 40
-    img = np.zeros(np.int32([np.ceil(1920 / bin_f), np.ceil(1080 / bin_f)]))
+    # bin_f = 40
+    bin_f = 0.02
+    # img = np.zeros(np.int32([np.ceil(1920 / bin_f), np.ceil(1080 / bin_f)]))
+    img = np.zeros(np.int32([np.ceil(1 / bin_f), np.ceil(1 / bin_f)]))
 
     img_binned = np.int32(np.round(mouse_center / bin_f))
 
     for i in range(mouse_center.shape[1]):
-        img[img_binned[0, i], img_binned[1, i]] += 1
+        try:
+            img[img_binned[0, i], img_binned[1, i]] += 1
+        except:
+            pass
+        #
     #
 
     img = img / np.sum(img[:])
@@ -116,7 +165,7 @@ if __name__ == "__main__":
                      np.nanmedian(df.box_lr_y),
                      np.nanmedian(df.box_ll_y),
                      np.nanmedian(df.box_ul_y)]
-                    ]) / bin_f
+                    ]) / bin_f - 0.5
 
     plt.plot(box[0, :], box[1, :], 'k')
 
