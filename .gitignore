@@ -1,7 +1,7 @@
 # ignore these file types:
 *.png
 *.svg
-# *.csv
+*.csv
 *.fig
 *.asv
 *.mat
