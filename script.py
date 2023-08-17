@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from glob import glob
 
 
 def load_dlc_csv_results(fPath):
@@ -97,79 +98,80 @@ if __name__ == "__main__":
     # file = r"373_WIN_20220524_093853DLC_resnet50_testOct30shuffle1_10000.csv"
     # file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000.csv"
     file = r"278_WIN_20220525_085119DLC_resnet50_2023-08-14_TCPhase2Aug14shuffle1_500000_filtered.csv"
-    df = load_dlc_csv_results(path.join(folder, file))
+    all_files = glob("data\*.csv")
+    for file in all_files[7:]:
+        # df = load_dlc_csv_results(path.join(folder, file))
+        df = load_dlc_csv_results(file)
+        df = align_touchscreen_df(df)
 
-    df = align_touchscreen_df(df)
+        """
+        This is something I saw and we need to be aware of when interpreting the data!!!
+        Some sessions are recorded at 15Hz and Some at 30Hz !
+        I dont know if that's just the difference between the two setups or not
+        But this is crucial when interpreting the speed of mice!    
+        """
 
+        fig, ax = plt.subplots(2, 2)
+        ax[0, 0].plot(df.left_ear_x, df.left_ear_y)
+        ax[0, 0].invert_yaxis()
+        ax[0, 0].title.set_text('Left_ear')
 
-    """
-    This is something I saw and we need to be aware of when interpreting the data!!!
-    Some sessions are recorded at 15Hz and Some at 30Hz !
-    I dont know if that's just the difference between the two setups or not
-    But this is crucial when interpreting the speed of mice!    
-    """
+        ax[0, 1].plot(df.right_ear_x, df.right_ear_y)
+        ax[0, 1].invert_yaxis()
+        ax[0, 1].title.set_text('Right_ear')
 
-    print(df)
+        ax[1, 0].plot(df.tail_x, df.tail_y)
+        ax[1, 0].invert_yaxis()
+        ax[1, 0].title.set_text('Tail')
 
-    fig, ax = plt.subplots(2, 2)
-    ax[0, 0].plot(df.left_ear_x, df.left_ear_y)
-    ax[0, 0].invert_yaxis()
-    ax[0, 0].title.set_text('Left_ear')
+        mouse_center = np.array([(df.left_ear_x + df.right_ear_x + df.tail_x) / 3,
+                                 (df.left_ear_y + df.right_ear_y + df.tail_y) / 3])
 
-    ax[0, 1].plot(df.right_ear_x, df.right_ear_y)
-    ax[0, 1].invert_yaxis()
-    ax[0, 1].title.set_text('Right_ear')
+        ax[1, 1].plot(mouse_center[0, :], mouse_center[1, :])
+        ax[1, 1].invert_yaxis()
+        ax[1, 1].title.set_text('mouse_center')
 
-    ax[1, 0].plot(df.tail_x, df.tail_y)
-    ax[1, 0].invert_yaxis()
-    ax[1, 0].title.set_text('Tail')
+        # mouse_center[mouse_center < 0] = 0
+        # mouse_center[mouse_center > 1] = 1
 
-    mouse_center = np.array([(df.left_ear_x + df.right_ear_x + df.tail_x) / 3,
-                             (df.left_ear_y + df.right_ear_y + df.tail_y) / 3])
+        # bin_f = 40
+        bin_f = 0.02
+        offset = np.round(1/bin_f)
+        # img = np.zeros(np.int32([np.ceil(1920 / bin_f), np.ceil(1080 / bin_f)]))
+        img = np.zeros(np.int32([np.ceil(1 / bin_f), np.ceil(1 / bin_f)] + 2*offset))
 
-    mouse_center[mouse_center < 0] = 0
-    mouse_center[mouse_center > 1] = 1
+        img_binned = np.int32(np.round(mouse_center / bin_f)+offset)
 
-    ax[1, 1].plot(mouse_center[0, :], mouse_center[1, :])
-    ax[1, 1].invert_yaxis()
-    ax[1, 1].title.set_text('mouse_center')
-
-    # bin_f = 40
-    bin_f = 0.02
-    # img = np.zeros(np.int32([np.ceil(1920 / bin_f), np.ceil(1080 / bin_f)]))
-    img = np.zeros(np.int32([np.ceil(1 / bin_f), np.ceil(1 / bin_f)]))
-
-    img_binned = np.int32(np.round(mouse_center / bin_f))
-
-    for i in range(mouse_center.shape[1]):
-        try:
-            img[img_binned[0, i], img_binned[1, i]] += 1
-        except:
-            pass
+        for i in range(mouse_center.shape[1]):
+            try:
+                img[img_binned[0, i], img_binned[1, i]] += 1
+            except:
+                pass
+            #
         #
+
+        img = img / np.sum(img[:])
+
+        plt.figure()
+        plt.imshow(img.T, vmin=0, vmax=np.percentile(img[:], 99), cmap=mpl.colormaps['Reds'])
+        plt.colorbar()
+
+        box = np.array([[np.nanmedian(df.box_ul_x),
+                         np.nanmedian(df.box_ur_x),
+                         np.nanmedian(df.box_lr_x),
+                         np.nanmedian(df.box_ll_x),
+                         np.nanmedian(df.box_ul_x)],
+                        [np.nanmedian(df.box_ul_y),
+                         np.nanmedian(df.box_ur_y),
+                         np.nanmedian(df.box_lr_y),
+                         np.nanmedian(df.box_ll_y),
+                         np.nanmedian(df.box_ul_y)]
+                        ]) / bin_f - 0.5 + offset
+
+        plt.plot(box[0, :], box[1, :], 'k')
+
+        plt.savefig(path.splitext(file)[0]+'_heatmap.png')
+
+        plt.show()
     #
-
-    img = img / np.sum(img[:])
-
-    plt.figure()
-    plt.imshow(img.T, vmin=0, vmax=np.percentile(img[:], 99), cmap=mpl.colormaps['Reds'])
-    plt.colorbar()
-
-    box = np.array([[np.nanmedian(df.box_ul_x),
-                     np.nanmedian(df.box_ur_x),
-                     np.nanmedian(df.box_lr_x),
-                     np.nanmedian(df.box_ll_x),
-                     np.nanmedian(df.box_ul_x)],
-                    [np.nanmedian(df.box_ul_y),
-                     np.nanmedian(df.box_ur_y),
-                     np.nanmedian(df.box_lr_y),
-                     np.nanmedian(df.box_ll_y),
-                     np.nanmedian(df.box_ul_y)]
-                    ]) / bin_f - 0.5
-
-    plt.plot(box[0, :], box[1, :], 'k')
-
-    plt.savefig(path.splitext(file)[0]+'_heatmap.png')
-
-    plt.show()
 #
