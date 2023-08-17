@@ -49,6 +49,7 @@ if __name__ == "__main__":
     ax[0].axis("equal")
     ax[1].axis("equal")
     ax[2].axis("equal")
+    plt.savefig("Alignment_visualization.png", dpi=500)
     plt.show()
 #
 
