@@ -1,10 +1,12 @@
 from glob import glob
+import os
 from os import path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from glob import glob
+import pickle
 
 
 def load_dlc_csv_results(fPath):
@@ -99,6 +101,9 @@ if __name__ == "__main__":
     # file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000.csv"
     file = r"278_WIN_20220525_085119DLC_resnet50_2023-08-14_TCPhase2Aug14shuffle1_500000_filtered.csv"
     all_files = glob("data\*.csv")
+
+    all_speeds_median = dict()
+    all_speeds_mean = dict()
     for file in all_files[7:]:
         # df = load_dlc_csv_results(path.join(folder, file))
         df = load_dlc_csv_results(file)
@@ -137,6 +142,7 @@ if __name__ == "__main__":
         # bin_f = 40
         bin_f = 0.02
         offset = np.round(1/bin_f)
+        offset = np.int32(0)
         # img = np.zeros(np.int32([np.ceil(1920 / bin_f), np.ceil(1080 / bin_f)]))
         img = np.zeros(np.int32([np.ceil(1 / bin_f), np.ceil(1 / bin_f)] + 2*offset))
 
@@ -169,9 +175,60 @@ if __name__ == "__main__":
                         ]) / bin_f - 0.5 + offset
 
         plt.plot(box[0, :], box[1, :], 'k')
+        # plt.savefig(path.splitext(file)[0]+'_heatmap.png')
 
-        plt.savefig(path.splitext(file)[0]+'_heatmap.png')
+        plt.xlim([0, 1 / bin_f])
+        plt.ylim([0, 1 / bin_f])
+        plt.gca().invert_yaxis()
 
-        plt.show()
+        # plt.savefig(path.splitext(file)[0]+'_heatmap.png')
+
+        os.makedirs("heatmaps", exist_ok=True)
+        plt.savefig(path.join("heatmaps", path.splitext(path.basename(file))[0] + '_heatmap.png'))
+
+
+
+        # also look at the median speed for mice
+
+        fps = 15  # ToDo: THIS IS JUST A GUESS FOR NOW!!!
+
+        # print(mouse_center)
+        mean_speed_xy = np.mean(np.diff(mouse_center, 1), 1)
+        median_speed_xy = np.median(np.diff(mouse_center, 1), 1)
+
+        median_speed = np.sqrt(np.square(median_speed_xy[0]) + np.square(median_speed_xy[1])) * fps
+        mean_speed = np.sqrt(np.square(mean_speed_xy[0]) + np.square(mean_speed_xy[1])) * fps
+
+        mouse_id = path.basename(file).split("_")[0]
+        if mouse_id not in all_speeds_mean.keys():
+            all_speeds_mean[mouse_id] = list()
+            all_speeds_median[mouse_id] = list()
+        #
+
+        all_speeds_mean[mouse_id].append(mean_speed)
+        all_speeds_median[mouse_id].append(median_speed)
+        print(median_speed)
+        # plt.show()
     #
+
+    # Open a file and use dump()
+    with open('all_speeds_mean.pkl', 'wb') as file:
+        # A new file will be created
+        pickle.dump(all_speeds_mean, file)
+    #
+
+    # Open a file and use dump()
+    with open('all_speeds_median.pkl', 'wb') as file:
+        # A new file will be created
+        pickle.dump(all_speeds_median, file)
+    #
+
+    print(all_speeds_median)
+
+    plt.close("all")
+    for i, mouse_id in enumerate(all_speeds_median.keys()):
+        plt.plot(np.repeat(i, len(all_speeds_median[mouse_id])), all_speeds_median[mouse_id], "ok")
+        plt.draw()
+    #
+    plt.show()
 #
