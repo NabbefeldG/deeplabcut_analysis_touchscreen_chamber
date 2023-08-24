@@ -1,3 +1,4 @@
+import os
 from glob import glob
 from os import path
 import pandas as pd
@@ -99,7 +100,7 @@ if __name__ == "__main__":
     # file = r"278_WIN_20220524_090701DLC_resnet50_testOct30shuffle1_10000.csv"
     file = r"278_WIN_20220525_085119DLC_resnet50_2023-08-14_TCPhase2Aug14shuffle1_500000_filtered.csv"
     all_files = glob("data\*.csv")
-    for file in all_files[7:]:
+    for file in all_files:
         # df = load_dlc_csv_results(path.join(folder, file))
         df = load_dlc_csv_results(file)
         df = align_touchscreen_df(df)
@@ -137,6 +138,7 @@ if __name__ == "__main__":
         # bin_f = 40
         bin_f = 0.02
         offset = np.round(1/bin_f)
+        offset = np.int32(0)
         # img = np.zeros(np.int32([np.ceil(1920 / bin_f), np.ceil(1080 / bin_f)]))
         img = np.zeros(np.int32([np.ceil(1 / bin_f), np.ceil(1 / bin_f)] + 2*offset))
 
@@ -153,7 +155,7 @@ if __name__ == "__main__":
         img = img / np.sum(img[:])
 
         plt.figure()
-        plt.imshow(img.T, vmin=0, vmax=np.percentile(img[:], 99), cmap=mpl.colormaps['Reds'])
+        plt.imshow(img.T, vmin=0, vmax=np.percentile(img[:], 99.5), cmap=mpl.colormaps['Reds'])
         plt.colorbar()
 
         box = np.array([[np.nanmedian(df.box_ul_x),
@@ -170,8 +172,15 @@ if __name__ == "__main__":
 
         plt.plot(box[0, :], box[1, :], 'k')
 
-        plt.savefig(path.splitext(file)[0]+'_heatmap.png')
+        plt.xlim([0, 1/bin_f])
+        plt.ylim([0, 1/bin_f])
+        plt.gca().invert_yaxis()
 
-        plt.show()
+        # plt.savefig(path.splitext(file)[0]+'_heatmap.png')
+
+        os.makedirs("heatmaps", exist_ok=True)
+        plt.savefig(path.join("heatmaps", path.splitext(path.basename(file))[0]+'_heatmap.png'))
+
+        # plt.show()
     #
 #
